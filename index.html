@@ -483,10 +483,19 @@ WALKE.forEach(([a,b])=>addE('W'+a,'W'+b));
 const BASE=Object.keys(NODES);
 PLACES.forEach(p=>NODES[p.id]=p);
 [...PLACES,...STOPS,...RENT,CUR].forEach(n=>{NODES[n.id]=n;BASE.map(id=>NODES[id]).sort((a,b)=>px(a,n)-px(b,n)).slice(0,2).forEach(m=>addE(n.id,m.id))});
-/* 캠퍼스 기본 지도: 오픈스트리트맵 타일 (© OpenStreetMap 기여자) */
-(function buildBase(){const g=document.getElementById('basemap');if(!g)return;let h=`<rect width="${MAPW}" height="${MAPH}" fill="#eef0f2"/>`;
- for(let ty=50753;ty<=50760;ty++)for(let tx=111750;tx<=111755;tx++){const x=(tx*512-57216192.92)/2.197167,y=(ty*512-25985560.25)/2.197167;h+=`<image href="https://tile.openstreetmap.org/17/${tx}/${ty}.png" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="233.62699999999998" height="233.62699999999998" preserveAspectRatio="none"/>`}
- h+=`<rect width="${MAPW}" height="${MAPH}" fill="#fff" opacity=".18"/>`;g.innerHTML=h})();
+/* 캠퍼스 기본 지도: 오픈스트리트맵 타일 (© OpenStreetMap 기여자) — 타일을 한 장으로 합쳐서 화면이 바뀔 때 깜빡이지 않게 */
+(function buildBase(){const g=document.getElementById('basemap');if(!g)return;
+ const TX0=111750,TX1=111755,TY0=50753,TY1=50760,OX=57216192.92,OY=25985560.25,K=2.197167;
+ const X=(TX0*512-OX)/K,Y=(TY0*512-OY)/K,WD=(TX1-TX0+1)*512/K,HT=(TY1-TY0+1)*512/K;
+ const url=(tx,ty)=>`https://tile.openstreetmap.org/17/${tx}/${ty}.png`;
+ const veil=`<rect x="${X}" y="${Y}" width="${WD}" height="${HT}" fill="#fff" opacity=".18"/>`;
+ let h=`<rect width="${MAPW}" height="${MAPH}" fill="#eef0f2"/>`;
+ for(let ty=TY0;ty<=TY1;ty++)for(let tx=TX0;tx<=TX1;tx++)h+=`<image href="${url(tx,ty)}" x="${((tx*512-OX)/K).toFixed(2)}" y="${((ty*512-OY)/K).toFixed(2)}" width="${(512/K+.6).toFixed(2)}" height="${(512/K+.6).toFixed(2)}" preserveAspectRatio="none"/>`;
+ g.innerHTML=h+veil;
+ try{const cv=document.createElement('canvas');cv.width=(TX1-TX0+1)*256;cv.height=(TY1-TY0+1)*256;const cx=cv.getContext('2d');const jobs=[];
+  for(let ty=TY0;ty<=TY1;ty++)for(let tx=TX0;tx<=TX1;tx++)jobs.push(new Promise(ok=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{cx.drawImage(im,(tx-TX0)*256,(ty-TY0)*256);ok(1)};im.onerror=()=>ok(0);im.src=url(tx,ty)}));
+  Promise.all(jobs).then(r=>{if(r.some(v=>!v))return;cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const im=new Image();im.onload=()=>{g.innerHTML=`<rect width="${MAPW}" height="${MAPH}" fill="#eef0f2"/><image href="${u}" x="${X.toFixed(2)}" y="${Y.toFixed(2)}" width="${WD.toFixed(2)}" height="${HT.toFixed(2)}" preserveAspectRatio="none"/>`+veil};im.src=u},'image/png')})}catch(e){}
+})();
 const rcache={},tcache={};
 function tree(a){if(tcache[a])return tcache[a];const dist={},prev={};dist[a]=0;const h=[[0,a]];
  const push=x=>{h.push(x);let i=h.length-1;while(i){const j=(i-1)>>1;if(h[j][0]<=h[i][0])break;[h[i],h[j]]=[h[j],h[i]];i=j}};
