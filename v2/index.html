@@ -720,7 +720,7 @@ function widgetHTML(pl){const x=pl.shuttle;let body;
  else{const sb=x.sb,st=STOPS[sb.bi],m=x.gpsWalk==null?null:x.wait-x.gpsWalk;const mp=m==null?'':marginPill(m,x.nx);
   body=`<div class="wtop">${ic('bus',16)}<span>${DIRN[sb.dir]} 셔틀이 <b style="color:var(--ydeep)">${st.name} 정류장</b>에 오기까지</span></div>
   <div class="wcd"><span data-k="cd" data-i="${x.cur.i}" data-s="${sb.bi}">--</span><small>${clk(x.cur.a)} 도착</small></div>
-  ${tripCong(x.tr)?`<div><span class="cgnote">${ic('warn',13)} 혼잡할 수 있는 차예요 · 자리가 없으면 다음 차를 타야 해요</span></div>`:''}
+  ${tripCong(x.tr)?`<div><span class="cgnote">${ic('warn',13)} 혼잡할 수 있는 차예요</span></div>`:''}
   <div class="wsub">${sb.alt?`${STOPS[sb.bi].name} 정류장에서 탑승 · 도보 ${mins(sb.wb.min)} ${marginPill(x.margin,x.nx)}`:S.gps?`내 위치에서 정류장까지 도보 ${mins(x.gpsWalk)} ${mp}`:''}</div>`}
  return`<section class="wwrap"><div class="widget">${body}</div></section>`}
 
