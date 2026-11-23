@@ -540,7 +540,9 @@ const won=n=>n.toLocaleString('ko-KR')+'원';
 function seoulParts(){try{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',weekday:'short',hourCycle:'h23'}).formatToParts(new Date());const g=t=>p.find(x=>x.type===t).value;
  return{date:`${g('year')}-${g('month')}-${g('day')}`,wd:g('weekday'),min:+g('hour')*60+ +g('minute')+ +g('second')/60}}catch(e){const d=new Date();return{date:d.toISOString().slice(0,10),wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()],min:d.getHours()*60+d.getMinutes()}}}
 const NOW=seoulParts();
-let T=NOW.min,shifted=false;
+let T=NOW.min,shifted=false,TOFF=0;
+/* 앱 시각은 항상 실제 서울 시각에서 다시 계산 (폰이 잠들었다 깨어나도 밀리지 않게) */
+const realT=()=>{const m=seoulParts().min+TOFF;return((m%1440)+1440)%1440};
 
 const SVC_TODAY=true;/* 사용자 평가용: 주말에도 평일처럼 운행 */
 
@@ -1029,7 +1031,7 @@ const ACT={
  gpsToggle:()=>{S.gps=!S.gps;persist();render();toast(S.gps?'위치 권한을 허용했어요. 정류장까지 걷는 시간을 함께 알려드려요.':'위치 권한을 껐어요. 정류장 도착 기준으로 안내해요.')},
  offlineToggle:()=>{S.offline=!S.offline;if(!S.offline){S.lastUpd=T;lastFetch=performance.now()}render();toast(S.offline?'연결 끊김 상태로 바꿨어요.':'연결이 복구됐어요.')},
  forceSvc:()=>{S.forceSvc=!S.forceSvc;render();toast(S.forceSvc?'평일 시간표 기준으로 보여드려요.':'오늘 기준으로 돌아왔어요.')},
- plus5:()=>{T+=5;if(!S.offline)S.lastUpd=T;render();toast(`데모 시각을 ${clk(T)}(으)로 옮겼어요.`)},
+ plus5:()=>{TOFF+=5;T=realT();if(!S.offline)S.lastUpd=T;render();toast(`데모 시각을 ${clk(T)}(으)로 옮겼어요.`)},
  reset:()=>{S.step='welcome';S.from=null;S.to=null;S.gps=null;S.stack=[];S.tab='home';S.dir=null;persist();render()},
  perm:d=>{S.gps=d.v==='1';S.permAlert=false;S.step=null;S.tab='home';S.stack=[];S.tour=0;persist();render()},
  tourNext:()=>{if(S.tour>=TOUR.length-1){S.tour=null;S.tab='home'}else{S.tour++;S.tab=TOUR[S.tour][0]}render()},
@@ -1047,8 +1049,9 @@ app.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.w;if
 document.addEventListener('toggle',e=>{if(e.target.id==='tt')S.ttOpen=e.target.open},true);
 
 /* ================= 루프 ================= */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){T=realT();if(!S.offline)S.lastUpd=T;try{render()}catch(e){}}});
 let last=performance.now(),lastFetch=last;
-function tick(){const now=performance.now();T+=(now-last)/60000;last=now;if(T>=1440)T-=1440;
+function tick(){const now=performance.now();T=realT();last=now;
  if(!S.offline&&now-lastFetch>=10000){S.lastUpd=T;lastFetch=now}
  if(S.step){live();return}const{top,sc}=cur();
  if(sc.dyn&&sc.sig&&sc.sig(top)!==S._sig){const m=$('#main'),y=m?m.scrollTop:0;fillDyn();if(m)m.scrollTop=y}else live()}
